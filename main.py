@@ -12,6 +12,8 @@ from src.reservaCitas import viewCitas
 #dtos
 from src.gestionEventos.viewEventos import EventDTO
 from src.gestionInventario.viewInventario import ProductoDTO
+from src.reservaCitas.viewCitas import CitaDTO
+from src.seguimientoGastos.viewGastos import GastoDTO
 
 app = Flask(__name__)
 CORS(app, support_credentials=True)
@@ -45,6 +47,8 @@ def gestionInventario():
     data = request.json
 
     if 'save_producto' in data:
+
+        # creamos el objeto para guardarlo en la base de datos
         event_dto = ProductoDTO(
             id=None,
             nombre=data['nombre'],
@@ -169,16 +173,25 @@ def gestionEventos():
 
 
 
-
+# podras crar citas y consultarlas 
 @app.route('/reserva-citas', methods=['POST', 'GET'])
 def reservaCitas():
     if request.method == 'POST':
         data = request.json
 
         if 'crear_cita' in data:
-            cita_data = data['crear_cita']
-            cita_data['fecha'] = datetime.now().strftime("%Y-%m-%d")
-            cita_id = viewCitas.crear_cita(**cita_data)
+            fecha = data['fecha'] = datetime.now().strftime("%Y-%m-%d")
+            
+            # construimos el objeto
+            cita_dto = CitaDTO(
+                id_usuario=data['id_usuario'],
+                tipo_cita=data['tipo_cita'],
+                hora=data['hora'],
+                fecha=fecha,
+                nota=data['nota']
+            )
+
+            cita_id = viewCitas.crear_cita(cita_dto)
 
             if cita_id:
                 return jsonify({
@@ -191,22 +204,21 @@ def reservaCitas():
                     'status': 'error',
                     'message': 'Hubo un error al crear la cita'
                 }), 401
-    
-    elif request.method == 'GET':
-        citas = viewCitas.obtener_todas_las_citas()
 
-        if citas:
-            return jsonify({
-                'status': 'success',
-                'message': 'Citas obtenidas con éxito',
-                'citas': citas
-            }), 200
-        else:
-            return jsonify({
-                'status': 'error',
-                'message': 'Hubo un error al obtener las citas'
-            }), 401
+        elif 'consultar_cita' in data:
+            cita_consultada = viewCitas.obtener_todas_las_citas()
 
+            if cita_consultada:
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Cita consultada con éxito',
+                    'cita': cita_consultada
+                }), 200
+            else:
+                return jsonify({
+                    'status': 'error',
+                    'message': 'Hubo un error al consultar la cita'
+                }), 404
         
 @app.route('/seguimiento-gastos', methods=['POST', 'GET'])
 def seguimientoGastos():
@@ -214,9 +226,18 @@ def seguimientoGastos():
         data = request.json
 
         if 'crear_gasto' in data:
-            gasto_data = data['crear_gasto']
-            gasto_data['fecha'] = datetime.now().strftime("%Y-%m-%d")
-            gasto_id = viewGastos.create_gasto(**gasto_data)
+            fecha = data['fecha'] = datetime.now().strftime("%Y-%m-%d")
+
+            #creamos el objeto
+            gasto_dto = GastoDTO(
+                categoria=data['categoria'],
+                concepto=data['concepto'],
+                descripcion=data['descripcion'],
+                fecha=fecha,
+                monto=data['monto']
+            )
+
+            gasto_id = viewGastos.create_gasto(gasto_dto)
 
             if gasto_id:
                 return jsonify({
@@ -229,9 +250,9 @@ def seguimientoGastos():
                     'status': 'error',
                     'message': 'Hubo un error al crear el gasto'
                 }), 401
-    
-    elif request.method == 'GET':
-        gastos = viewGastos.get_all_gastos()
+            
+        elif 'consultar_gasto':
+            gastos = viewGastos.get_all_gastos()
 
         if gastos:
             return jsonify({
@@ -244,6 +265,7 @@ def seguimientoGastos():
                 'status': 'error',
                 'message': 'Hubo un error al obtener los gastos'
             }), 401
+        
 # ejecutamos el servidor desde el servicio principal
 if __name__ == '__main__':
     app.run(debug=True)

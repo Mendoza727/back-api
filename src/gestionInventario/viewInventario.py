@@ -1,7 +1,7 @@
 from db.db import *
 
 # conexion a la base de datos
-conn = connect_to_database()
+#conn = connect_to_database()
 
 # DTO Productos
 class ProductoDTO: 
@@ -27,6 +27,7 @@ def to_dict(self):
         
 
 def create_producto(producto_dto: ProductoDTO):
+    conn = connect_to_database()
     try:
         with conn.cursor() as cursor:
             # insertamos en la base de datos
@@ -38,6 +39,7 @@ def create_producto(producto_dto: ProductoDTO):
         close_connection_to_database(conn)
 
 def get_all_productos():
+    conn = connect_to_database()
     try:
         with conn.cursor() as cursor:
             sql = "SELECT * FROM Productos"
